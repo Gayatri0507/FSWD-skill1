@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Login - Index</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; background:#f2f6fb; display:flex; align-items:center; justify-content:center; height:100vh; margin:0; }
+    .card { background:white; padding:24px; border-radius:8px; box-shadow:0 6px 18px rgba(20,30,60,0.08); width:320px; }
+    h1 { font-size:20px; margin:0 0 12px; }
+    label { display:block; margin-top:8px; font-size:13px; }
+    input { width:100%; padding:8px 10px; margin-top:6px; box-sizing:border-box; border-radius:6px; border:1px solid #d7e0ef; }
+    button { width:100%; margin-top:14px; padding:10px; border-radius:6px; border:0; background:#2563eb; color:white; font-weight:600; cursor:pointer; }
+    .hint { margin-top:12px; font-size:13px; color:#555; }
+    .error { color:#b00020; margin-top:10px; font-weight:600; }
+    .accounts { margin-top:12px; font-size:13px; color:#333; background:#f8fbff; padding:8px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sign in</h1>
+    <form id="loginForm">
+      <label for="username">Username</label>
+      <input id="username" name="username" autocomplete="username" required />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+
+      <button type="submit">Login</button>
+      <div id="error" class="error" role="alert" aria-live="polite" style="display:none;"></div>
+    </form>
+
+    <div class="accounts">
+      <strong>Test accounts:</strong>
+      <div>Admin — <code>admin / admin123</code></div>
+      <div>User — <code>user / user123</code></div>
+    </div>
+
+    <div class="hint">This is a static demo. Login persists to <code>sessionStorage</code> only.</div>
+  </div>
+
+  <script>
+    // Demo user database (client-side only)
+    const demoDB = [
+      { username: 'admin', password: 'admin123', role: 'admin' },
+      { username: 'user', password: 'user123', role: 'user' }
+    ];
+
+    const form = document.getElementById('loginForm');
+    const errorDiv = document.getElementById('error');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      errorDiv.style.display = 'none';
+
+      const username = form.username.value.trim();
+      const password = form.password.value;
+
+      const match = demoDB.find(u => u.username === username && u.password === password);
+
+      if (!match) {
+        errorDiv.textContent = 'Invalid username or password.';
+        errorDiv.style.display = 'block';
+        return;
+      }
+
+      // Save small "session" to sessionStorage
+      sessionStorage.setItem('auth', JSON.stringify({
+        username: match.username,
+        role: match.role,
+        loginAt: new Date().toISOString()
+      }));
+
+      // If admin -> admin.html ; if user -> user.html
+      if (match.role === 'admin') {
+        location.href = 'admin.html';
+      } else {
+        location.href = 'user.html';
+      }
+    });
+
+    // If already logged in, auto-redirect to the proper page
+    (function autoRedirectIfLoggedIn() {
+      const auth = sessionStorage.getItem('auth');
+      if (!auth) return;
+      try {
+        const parsed = JSON.parse(auth);
+        if (parsed.role === 'admin') location.href = 'admin.html';
+        if (parsed.role === 'user') location.href = 'user.html';
+      } catch (e) { /* ignore */ }
+    })();
+  </script>
+</body>
+</html>
