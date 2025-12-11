@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>User Page</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin:0; padding:24px; background:#f6f8fb; color:#102a43; }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .card { background:white; padding:16px; border-radius:8px; box-shadow:0 6px 14px rgba(20,30,60,0.06); }
+    button { padding:8px 12px; border:0; border-radius:6px; cursor:pointer; background:#2563eb; color:#fff; font-weight:600; }
+    #items { margin-top:12px; }
+    li { margin:8px 0; }
+    footer { margin-top:18px; color:#516a84; font-size:13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h2 id="welcome">Welcome</h2>
+      <div id="meta" style="font-size:13px;color:#516a84;"></div>
+    </div>
+    <div>
+      <button id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <h3>Your dashboard</h3>
+      <p>This page demonstrates some small interactive outputs:</p>
+
+      <p><strong>1) Current time:</strong> <span id="timeOutput">—</span>
+      <button id="timeBtn" style="margin-left:8px;padding:6px 10px;">Show time</button></p>
+
+      <p><strong>2) A small list of items:</strong></p>
+      <ul id="items">
+        <!-- populated by script -->
+      </ul>
+
+      <p><strong>3) Simple computation</strong> — example: calculate square of a number:
+        <input id="num" type="number" placeholder="enter a number" style="padding:6px;border-radius:6px;border:1px solid #d7e0ef;width:120px;margin-left:8px;" />
+        <button id="sqBtn">Square it</button>
+        <span id="sqOut" style="margin-left:8px;font-weight:600;"></span>
+      </p>
+    </div>
+  </main>
+
+  <footer>
+    <small>Static demo — data stored only in your browser session/localStorage.</small>
+  </footer>
+
+  <script>
+    // Ensure only "user" can access
+    const auth = sessionStorage.getItem('auth');
+    if (!auth) {
+      alert('Not logged in. You will be redirected to login.');
+      location.href = 'index.html';
+    } else {
+      try {
+        const parsed = JSON.parse(auth);
+        if (parsed.role !== 'user') {
+          alert('Access denied for this page. Redirecting to login.');
+          sessionStorage.removeItem('auth');
+          location.href = 'index.html';
+        } else {
+          document.getElementById('welcome').textContent = `Welcome, ${parsed.username}!`;
+          document.getElementById('meta').textContent = `Logged in: ${new Date(parsed.loginAt).toLocaleString()}`;
+        }
+      } catch (e) {
+        location.href = 'index.html';
+      }
+    }
+
+    // Populate items
+    const items = ['Learn HTML', 'Try a small JS script', 'Explore admin panel (admin users only)'];
+    const ul = document.getElementById('items');
+    items.forEach(i => {
+      const li = document.createElement('li');
+      li.textContent = i;
+      ul.appendChild(li);
+    });
+
+    // Time button
+    document.getElementById('timeBtn').addEventListener('click', () => {
+      const now = new Date();
+      document.getElementById('timeOutput').textContent = now.toLocaleString();
+    });
+
+    // Square demo
+    document.getElementById('sqBtn').addEventListener('click', () => {
+      const n = Number(document.getElementById('num').value);
+      if (Number.isNaN(n)) {
+        document.getElementById('sqOut').textContent = 'Please enter a number';
+      } else {
+        document.getElementById('sqOut').textContent = (n * n).toString();
+      }
+    });
+
+    // Logout
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      sessionStorage.removeItem('auth');
+      location.href = 'index.html';
+    });
+  </script>
+</body>
+</html>
