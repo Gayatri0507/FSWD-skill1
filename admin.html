@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Panel</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin:0; padding:24px; background:#f4f7fb; color:#102a43; }
+    header { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+    .card { background:white; padding:16px; border-radius:8px; box-shadow:0 6px 16px rgba(20,30,60,0.06); }
+    button { padding:8px 12px; border:0; border-radius:6px; cursor:pointer; background:#0f172a; color:#fff; font-weight:600; }
+    input { padding:8px; border-radius:6px; border:1px solid #d7e0ef; margin-right:8px; }
+    table { width:100%; border-collapse:collapse; margin-top:12px; }
+    th, td { text-align:left; padding:8px; border-bottom:1px solid #eef3fb; }
+    .small { font-size:13px; color:#516a84; margin-top:8px; }
+    .danger { background:#dc2626; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h2 id="adminTitle">Admin Panel</h2>
+      <div id="adminMeta" class="small"></div>
+    </div>
+    <div>
+      <button id="logout">Log out</button>
+    </div>
+  </header>
+
+  <section class="card">
+    <h3>Manage users (local demo)</h3>
+    <p class="small">Users are persisted in <code>localStorage</code>. This simulates a tiny admin "output" (list, add, delete).</p>
+
+    <div style="margin-top:12px;">
+      <input id="newUser" placeholder="new username" />
+      <input id="newPass" type="password" placeholder="password" />
+      <select id="newRole">
+        <option value="user">user</option>
+        <option value="admin">admin</option>
+      </select>
+      <button id="addBtn">Add user</button>
+    </div>
+
+    <table id="usersTable" aria-live="polite">
+      <thead>
+        <tr><th>Username</th><th>Role</th><th>Actions</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </section>
+
+  <script>
+    // Guard: only admin may view
+    const authRaw = sessionStorage.getItem('auth');
+    if (!authRaw) {
+      alert('Not logged in. Redirecting to login.');
+      location.href = 'index.html';
+    } else {
+      try {
+        const parsed = JSON.parse(authRaw);
+        if (parsed.role !== 'admin') {
+          alert('Access denied. Only admins may view this page.');
+          sessionStorage.removeItem('auth');
+          location.href = 'index.html';
+        } else {
+          document.getElementById('adminMeta').textContent = `Logged in: ${parsed.username} — ${new Date(parsed.loginAt).toLocaleString()}`;
+        }
+      } catch (e) { location.href = 'index.html'; }
+    }
+
+    // Tiny user store key
+    const KEY = 'demo_users_v1';
+
+    // Initialize localStorage with demo users if missing
+    function initStore() {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) {
+        const initial = [
+          { username: 'admin', password: 'admin123', role: 'admin' },
+          { username: 'user', password: 'user123', role: 'user' }
+        ];
+        localStorage.setItem(KEY, JSON.stringify(initial));
+      }
+    }
+
+    function readUsers() {
+      return JSON.parse(localStorage.getItem(KEY) || '[]');
+    }
+
+    function writeUsers(list) {
+      localStorage.setItem(KEY, JSON.stringify(list));
+    }
+
+    function renderTable() {
+      const tbody = document.querySelector('#usersTable tbody');
+      tbody.innerHTML = '';
+      const users = readUsers();
+      users.forEach((u, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${u.username}</td><td>${u.role}</td>
+          <td>
+            <button data-idx="${idx}" class="del">Delete</button>
+            <button data-idx="${idx}" class="showpw">Show PW</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // Add user
+    document.getElementById('addBtn').addEventListener('click', () => {
+      const username = document.getElementById('newUser').value.trim();
+      const password = document.getElementById('newPass').value;
+      const role = document.getElementById('newRole').value;
+
+      if (!username || !password) {
+        alert('Please enter username and password.');
+        return;
+      }
+
+      const users = readUsers();
+      if (users.some(u => u.username === username)) {
+        alert('Username already exists.');
+        return;
+      }
+
+      users.push({ username, password, role });
+      writeUsers(users);
+      renderTable();
+      document.getElementById('newUser').value = '';
+      document.getElementById('newPass').value = '';
+      document.getElementById('newRole').value = 'user';
+    });
+
+    // Event delegation for delete/show
+    document.querySelector('#usersTable tbody').addEventListener('click', (e) => {
+      const btn = e.target;
+      if (!btn.dataset.idx) return;
+      const idx = Number(btn.dataset.idx);
+      const users = readUsers();
+
+      if (btn.classList.contains('del')) {
+        if (!confirm(`Delete user "${users[idx].username}"?`)) return;
+        users.splice(idx, 1);
+        writeUsers(users);
+        renderTable();
+      } else if (btn.classList.contains('showpw')) {
+        alert(`Password for ${users[idx].username}: ${users[idx].password}`);
+      }
+    });
+
+    // Logout
+    document.getElementById('logout').addEventListener('click', () => {
+      sessionStorage.removeItem('auth');
+      location.href = 'index.html';
+    });
+
+    // Init and render
+    initStore();
+    renderTable();
+  </script>
+</body>
+</html>
